@@ -5,7 +5,6 @@ namespace Azuriom\Http\Controllers\Api;
 use Azuriom\Http\Controllers\Controller;
 use Azuriom\Http\Resources\AuthenticatedUser as AuthenticatedUserResource;
 use Azuriom\Models\User;
-use Azuriom\Support\Uuids;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -13,7 +12,7 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     /**
-     * Create a new AuthController instance.
+     * Create a new controller instance.
      */
     public function __construct()
     {
@@ -31,6 +30,7 @@ class AuthController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response|\Illuminate\Contracts\Support\Responsable
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(Request $request)
@@ -51,7 +51,7 @@ class AuthController extends Controller
         }
 
         if ($user->game_id === null) {
-            $user->game_id = Uuids::uuidFromName("AzuriomPlayer: {$user->id}");
+            $user->game_id = Str::uuid();
         }
 
         $user->update(['access_token' => Str::random(128)]);
@@ -64,6 +64,7 @@ class AuthController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response|\Illuminate\Contracts\Support\Responsable
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function verify(Request $request)
@@ -88,6 +89,7 @@ class AuthController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function logout(Request $request)

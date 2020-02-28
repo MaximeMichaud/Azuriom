@@ -21,7 +21,7 @@ class AdminController extends Controller
     private $app;
 
     /**
-     * AdminController constructor.
+     * Create a new controller instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
      */
@@ -47,6 +47,11 @@ class AdminController extends Controller
             'newVersion' => $newVersion,
             'apiAlerts' => $apiAlerts,
         ]);
+    }
+
+    public function fallback()
+    {
+        return response()->view('admin.errors.404', [], 404);
     }
 
     protected function getRecentUsers()

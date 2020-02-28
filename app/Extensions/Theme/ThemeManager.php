@@ -4,7 +4,9 @@ namespace Azuriom\Extensions\Theme;
 
 use Azuriom\Extensions\ExtensionManager;
 use Azuriom\Extensions\UpdateManager;
+use Azuriom\Models\Setting;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 class ThemeManager extends ExtensionManager
@@ -14,21 +16,21 @@ class ThemeManager extends ExtensionManager
      *
      * @var string|null
      */
-    private $currentTheme;
+    protected $currentTheme;
 
     /**
      * The themes/ directory.
      *
      * @var string
      */
-    private $themesPath;
+    protected $themesPath;
 
     /**
      * The themes/ public directory for assets.
      *
      * @var string
      */
-    private $themesPublicPath;
+    protected $themesPublicPath;
 
     /**
      * Create a new ThemeManager instance.
@@ -39,8 +41,8 @@ class ThemeManager extends ExtensionManager
     {
         parent::__construct($files);
 
-        $this->themesPath = resource_path('themes');
-        $this->themesPublicPath = public_path('assets/themes');
+        $this->themesPath = resource_path('themes/');
+        $this->themesPublicPath = public_path('assets/themes/');
     }
 
     /**
@@ -67,8 +69,24 @@ class ThemeManager extends ExtensionManager
         ]);
 
         $this->loadConfig($theme);
+    }
+
+    public function changeTheme(string $theme)
+    {
+        Setting::updateSettings('theme', $theme);
+
+        Cache::forget('theme.config');
 
         $this->createAssetsLink($theme);
+    }
+
+    public function updateConfig(string $theme, array $config)
+    {
+        $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        $this->files->put($this->path('config.json', $theme), $json);
+
+        Cache::put('theme.config', $config, now()->addDay());
     }
 
     /**
@@ -164,15 +182,23 @@ class ThemeManager extends ExtensionManager
      * @param  string|null  $theme
      * @return mixed|null
      */
-    public function findDescription(string $theme = null)
+    public function findDescription(string $theme)
     {
-        $path = $this->path('/theme.json', $theme);
+        $path = $this->path('theme.json', $theme);
 
         if ($path === null) {
             return null;
         }
 
-        return $this->getJson($path);
+        $json = $this->getJson($path);
+
+        // TODO 1.0: remove support for legacy extensions without id
+        if (! isset($json->id)) {
+            $json->id = $theme;
+        }
+
+        // The theme folder must be the theme id
+        return $theme === $json->id ? $json : null;
     }
 
     /**
@@ -268,7 +294,9 @@ class ThemeManager extends ExtensionManager
 
         $themeInfo = $themes[$themeId];
 
-        $themeDir = $this->path('', strtolower($themeInfo['name']));
+        $theme = $themeInfo['extension_id'];
+
+        $themeDir = $this->path('', $theme);
 
         if (! $this->files->isDirectory($themeDir)) {
             $this->files->makeDirectory($themeDir);
@@ -276,11 +304,13 @@ class ThemeManager extends ExtensionManager
 
         $updateManager->download($themeInfo, 'themes/');
         $updateManager->install($themeInfo, $themeDir, 'themes/');
+
+        $this->createAssetsLink($theme);
     }
 
     protected function loadConfig(string $theme)
     {
-        $themeConfig = app('cache')->remember('theme.config', now()->addDay(),
+        $themeConfig = Cache::remember('theme.config', now()->addDay(),
             function () use ($theme) {
                 return $this->getConfig($theme);
             });
@@ -306,7 +336,7 @@ class ThemeManager extends ExtensionManager
         $themeAssetsPath = $this->path('assets', $theme);
 
         if ($this->files->exists($themeAssetsPath)) {
-            $this->files->link($themeAssetsPath, $this->themesPublicPath('/'.$theme));
+            $this->files->link($themeAssetsPath, $this->themesPublicPath($theme));
         }
     }
 }

@@ -4,12 +4,11 @@ namespace Azuriom\Extensions\Plugin;
 
 use Azuriom\Extensions\ExtensionManager;
 use Azuriom\Extensions\UpdateManager;
+use Azuriom\Support\Optimizer;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
 use Throwable;
 
@@ -20,38 +19,38 @@ class PluginManager extends ExtensionManager
      *
      * @var array
      */
-    private $plugins = [];
+    protected $plugins = [];
 
     /**
      * The plugins/ directory.
      *
      * @var string
      */
-    private $pluginsPath;
+    protected $pluginsPath;
 
     /**
      * The plugins/ public directory for assets.
      *
      * @var string
      */
-    private $pluginsPublicPath;
+    protected $pluginsPublicPath;
 
     /**
      * The plugins route descriptions.
      *
      * @var \Illuminate\Support\Collection
      */
-    private $routeDescriptions;
+    protected $routeDescriptions;
 
     /**
      * The admin panel navigation.
      *
      * @var \Illuminate\Support\Collection
      */
-    private $adminNavItems;
+    protected $adminNavItems;
 
     /**
-     * Create a new pluginManager instance.
+     * Create a new PluginManager instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
      */
@@ -59,10 +58,10 @@ class PluginManager extends ExtensionManager
     {
         parent::__construct($files);
 
-        $this->pluginsPath = base_path('plugins');
-        $this->pluginsPublicPath = public_path('assets/plugins');
-        $this->routeDescriptions = new Collection();
-        $this->adminNavItems = new Collection();
+        $this->pluginsPath = base_path('plugins/');
+        $this->pluginsPublicPath = public_path('assets/plugins/');
+        $this->routeDescriptions = collect();
+        $this->adminNavItems = collect();
     }
 
     public function loadPlugins(Application $app)
@@ -75,21 +74,28 @@ class PluginManager extends ExtensionManager
 
         $composer = $this->files->getRequire(base_path('vendor/autoload.php'));
 
-        foreach ($plugins as $name => $plugin) {
+        foreach ($plugins as $pluginId => $plugin) {
             try {
-                $this->autoloadPlugin($name, $composer, $plugin->composer);
+                if (! isset($plugin->composer)) {
+                    continue;
+                }
+
+                // TODO 1.0: remove support for legacy extensions without id
+                if (! isset($plugin->id)) {
+                    $plugin->id = $pluginId;
+                }
+
+                $this->autoloadPlugin($pluginId, $composer, $plugin->composer);
 
                 foreach ($plugin->providers ?? [] as $pluginProvider) {
                     $provider = new $pluginProvider($app);
 
-                    if (method_exists($provider, 'bindName')) {
-                        $provider->bindName($name);
+                    if (method_exists($provider, 'bindPlugin')) {
+                        $provider->bindPlugin($plugin);
                     }
 
                     $app->register($provider);
                 }
-
-                $this->createAssetsLink($name);
             } catch (Throwable $t) {
                 report($t);
             }
@@ -104,7 +110,7 @@ class PluginManager extends ExtensionManager
      */
     public function pluginsPath(string $path = '')
     {
-        return $this->pluginsPath.'/'.$path;
+        return $this->pluginsPath.$path;
     }
 
     /**
@@ -127,12 +133,12 @@ class PluginManager extends ExtensionManager
      */
     public function path(string $plugin, string $path = '')
     {
-        return $this->pluginsPath("/{$plugin}/{$path}");
+        return $this->pluginsPath("{$plugin}/{$path}");
     }
 
     public function publicPath(string $plugin, string $path = '')
     {
-        return $this->pluginsPublicPath("/{$plugin}/{$path}");
+        return $this->pluginsPublicPath("{$plugin}/{$path}");
     }
 
     /**
@@ -142,7 +148,7 @@ class PluginManager extends ExtensionManager
      */
     public function getCachedPluginsPath()
     {
-        return storage_path('app/plugins');
+        return base_path('bootstrap/cache/plugins.php');
     }
 
     /**
@@ -175,7 +181,7 @@ class PluginManager extends ExtensionManager
      * @param  string|null  $plugin
      * @return mixed|null
      */
-    public function findDescription(string $plugin = null)
+    public function findDescription(string $plugin)
     {
         $path = $this->path($plugin, 'plugin.json');
 
@@ -186,6 +192,16 @@ class PluginManager extends ExtensionManager
         $json = $this->getJson($path);
 
         if ($json === null) {
+            return null;
+        }
+
+        // TODO 1.0: remove support for legacy extensions without id
+        if (! isset($json->id)) {
+            $json->id = $plugin;
+        }
+
+        // The plugin folder must be the plugin id
+        if ($plugin !== $json->id) {
             return null;
         }
 
@@ -297,32 +313,26 @@ class PluginManager extends ExtensionManager
             return in_array($plugin, $enabledPlugins, true);
         }, ARRAY_FILTER_USE_KEY);
 
-        $plugins = array_map(function ($plugin) {
-            return (array) $plugin;
-        }, $plugins);
-
         if (empty($enabledPlugins)) {
             $this->files->delete($this->getCachedPluginsPath());
 
             return [];
         }
 
-        $this->files->put($this->getCachedPluginsPath(), serialize($plugins));
+        $pluginsCache = array_map(function ($plugin) {
+            return (array) $plugin;
+        }, $plugins);
+
+        $this->files->put($this->getCachedPluginsPath(), '<?php return '.var_export($pluginsCache, true).';');
+
+        app(Optimizer::class)->removeFileFromOPCache($this->getCachedPluginsPath());
 
         return $plugins;
     }
 
     public function refreshRoutesCache()
     {
-        if (! app()->routesAreCached()) {
-            return;
-        }
-
-        Artisan::call('route:cache');
-
-        if (function_exists('opcache_invalidate')) {
-            opcache_invalidate(app()->getCachedRoutesPath());
-        }
+        app(Optimizer::class)->reloadRoutesCache();
     }
 
     public function getOnlinePlugins(bool $force = false)
@@ -368,7 +378,9 @@ class PluginManager extends ExtensionManager
 
         $pluginInfo = $plugins[$pluginId];
 
-        $pluginDir = $this->path(strtolower($pluginInfo['name']));
+        $plugin = $pluginInfo['extension_id'];
+
+        $pluginDir = $this->path($plugin);
 
         if (! $this->files->isDirectory($pluginDir)) {
             $this->files->makeDirectory($pluginDir);
@@ -377,25 +389,25 @@ class PluginManager extends ExtensionManager
         $updateManager->download($pluginInfo, 'plugins/');
 
         $updateManager->install($pluginInfo, $pluginDir, 'plugins/');
+
+        $this->createAssetsLink($plugin);
     }
 
     protected function getPlugins()
     {
-        if ($this->files->isFile($this->getCachedPluginsPath())) {
-            try {
-                $this->plugins = array_map(function ($array) {
-                    return (object) $array;
-                }, unserialize($this->files->get($this->getCachedPluginsPath())));
+        try {
+            $plugins = $this->files->getRequire($this->getCachedPluginsPath());
 
-                return $this->plugins;
-            } catch (FileNotFoundException $e) {
-                //
-            }
+            $this->plugins = array_map(function ($array) {
+                return (object) $array;
+            }, $plugins);
+
+            return $this->plugins;
+        } catch (FileNotFoundException $e) {
+            $this->plugins = $this->cachePlugins();
+
+            return $this->plugins;
         }
-
-        $this->plugins = $this->cachePlugins();
-
-        return $this->plugins;
     }
 
     protected function setPluginEnabled(string $plugin, bool $enabled)

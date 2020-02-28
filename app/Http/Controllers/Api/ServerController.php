@@ -7,35 +7,9 @@ use Azuriom\Models\Server;
 use Azuriom\Models\ServerCommand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class ServerController extends Controller
 {
-    /**
-     * Create a new ServerController instance.
-     */
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            $header = $request->header('Authorization', '');
-
-            if (! Str::startsWith($header, 'Basic ')) {
-                abort(401, 'No server key provided.');
-            }
-
-            $token = base64_decode(Str::substr($header, 6));
-            $server = Server::where('token', $token)->first();
-
-            if ($server === null) {
-                abort(403, 'Invalid server key.');
-            }
-
-            $request->merge(['server-id' => $server->id]);
-
-            return $next($request);
-        });
-    }
-
     public function status()
     {
         return response()->json(['status' => 'ok']);
@@ -61,7 +35,7 @@ class ServerController extends Controller
             ->orWhere('need_online', false)
             ->get();
 
-        ServerCommand::whereIn('id', $commands->pluck('id'))->delete();
+        ServerCommand::whereIn('id', $commands->modelKeys())->delete();
 
         $commands = $commands->groupBy('player_name')
             ->map(function ($serverCommands) {

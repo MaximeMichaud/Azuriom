@@ -4,7 +4,7 @@ return [
 
     'lang' => 'Français',
 
-    'copyright' => 'Propulsé par <a href="https://azuriom.com" target="_blank" rel="noreferrer">Azuriom</a>.',
+    'copyright' => 'Propulsé par <a href="https://azuriom.com" target="_blank" rel="noopener noreferrer">Azuriom</a>.',
 
     'date' => 'j F Y',
     'date-full' => 'j F Y \à G:i',
@@ -73,6 +73,8 @@ return [
 
     'status-error' => 'Une erreur est survenue: :error',
 
+    'catpcha-failed' => 'La vérification du captcha a échouée, merci de rééssayer.',
+
     'profile' => [
         'title' => 'Mon Profil',
         'change-email' => 'Changer l\'adresse e-mail',
@@ -80,7 +82,7 @@ return [
 
         'not-verified' => 'Votre adresse mail n\'est pas vérifiée, veuillez vérifier que vous n\'ayez pas reçu un lien de vérification.',
 
-        'updated' => 'Profil mis à jour',
+        'updated' => 'Votre profil a été mis à jour.',
 
         'info' => [
             'role' => 'Rôle: :role',
@@ -107,19 +109,18 @@ return [
     'posts' => [
         'posts' => 'Articles',
         'posted' => 'Posté le :date par :user',
-        'not-published' => 'Cet article n\'est pas encore publié',
+        'not-published' => 'Cet article n\'est pas encore publié.',
         'read' => 'Lire la suite',
     ],
 
     'comments' => [
         'create' => 'Laisser un commentaire',
         'guest' => 'Vous devez être connecté pour laisser un commentaire.',
-        'author' => '<strong>:user</strong> a commenté le :date',
+        'author' => '<strong>:user</strong> à commenté le :date',
         'your-comment' => 'Votre commentaire',
-        'post-comment' => 'Poster',
         'delete-title' => 'Supprimer ?',
         'delete-description' => 'Êtes-vous sûr de vouloir supprimer ce commentaire ?',
     ],
 
-    'likes' => 'J\'aimes: :count',
+    'likes' => 'J\'aimes : :count',
 ];

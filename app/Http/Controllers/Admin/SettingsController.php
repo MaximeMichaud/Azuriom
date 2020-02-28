@@ -6,10 +6,10 @@ use Azuriom\Http\Controllers\Controller;
 use Azuriom\Models\ActionLog;
 use Azuriom\Models\Image;
 use Azuriom\Models\Setting;
+use Azuriom\Support\Optimizer;
 use Illuminate\Cache\Repository as Cache;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 
@@ -71,14 +71,24 @@ class SettingsController extends Controller
     private $cache;
 
     /**
-     * SettingsController constructor.
+     * The Azuriom optimizer.
+     *
+     * @var \Azuriom\Support\Optimizer
+     */
+    private $optimizer;
+
+    /**
+     * Create a new controller instance.
+     *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
      * @param  \Illuminate\Cache\Repository  $cache
+     * @param  \Azuriom\Support\Optimizer  $optimizer
      */
-    public function __construct(Application $app, Cache $cache)
+    public function __construct(Application $app, Cache $cache, Optimizer $optimizer)
     {
         $this->app = $app;
         $this->cache = $cache;
+        $this->optimizer = $optimizer;
     }
 
     /**
@@ -108,8 +118,9 @@ class SettingsController extends Controller
     /**
      * Update the application settings.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function update(Request $request)
@@ -136,8 +147,8 @@ class SettingsController extends Controller
 
         $response = redirect()->route('admin.settings.index')->with('success', trans('admin.settings.status.updated'));
 
-        if (setting('register', false) !== $request->has('register') && $this->app->routesAreCached()) {
-            Artisan::call('route:cache');
+        if (setting('register', false) !== $request->has('register')) {
+            $this->optimizer->reloadRoutesCache();
         }
 
         return $response;
@@ -162,8 +173,9 @@ class SettingsController extends Controller
     /**
      * Update the application security settings.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Exception
      */
@@ -203,7 +215,7 @@ class SettingsController extends Controller
 
     public function performance()
     {
-        return view('admin.settings.performance', ['cacheStatus' => $this->hasAdvancedCache()]);
+        return view('admin.settings.performance', ['cacheStatus' => $this->optimizer->isEnabled()]);
     }
 
     /**
@@ -213,11 +225,9 @@ class SettingsController extends Controller
      */
     public function clearCache()
     {
-        $success = (Artisan::call('view:clear') === 0) && $this->cache->flush();
-
         $response = redirect()->route('admin.settings.performance');
 
-        if (! $success) {
+        if (! $this->cache->flush()) {
             return $response->with('error', trans('admin.settings.performances.cache.status.clear-error'));
         }
 
@@ -227,11 +237,9 @@ class SettingsController extends Controller
     public function enableAdvancedCache()
     {
         $redirect = redirect()->route('admin.settings.performance');
-        $cacheStatus = $this->hasAdvancedCache();
+        $cacheStatus = $this->optimizer->isEnabled();
 
-        $exitCode = Artisan::call('config:cache') + Artisan::call('route:cache');
-
-        if ($exitCode !== 0) {
+        if (! $this->optimizer->cache()) {
             return $redirect->with('error', trans('admin.settings.performances.boost.status.enable-error'));
         }
 
@@ -241,29 +249,38 @@ class SettingsController extends Controller
 
     public function disableAdvancedCache()
     {
-        $exitCode = Artisan::call('route:clear') + Artisan::call('config:clear');
+        $this->optimizer->clear();
 
-        $response = redirect()->route('admin.settings.performance');
+        return redirect()->route('admin.settings.performance')
+            ->with('success', trans('admin.settings.performances.boost.status.disabled'));
+    }
 
-        if ($exitCode !== 0) {
-            return $response->with('error', trans('admin.settings.performances.boost.status.disable-error'));
-        }
+    public function linkStorage()
+    {
+        $storagePublicPath = public_path('storage');
 
-        return $response->with('success', trans('admin.settings.performances.boost.status.disabled'));
+        File::delete($storagePublicPath);
+
+        File::link(storage_path('app/public'), $storagePublicPath);
+
+        return redirect()->route('admin.settings.performance')->with('success', 'Success');
     }
 
     public function seo()
     {
-        $show = setting('g-analytics-id') || old('enable-g-analytics');
-
-        return view('admin.settings.seo', ['enableAnalytics' => $show]);
+        return view('admin.settings.seo', [
+            'enableAnalytics' => setting('g-analytics-id') || old('enable-g-analytics'),
+            'htmlHead' => setting('html-head'),
+            'htmlBody' => setting('html-body'),
+        ]);
     }
 
     /**
      * Update the application SEO settings.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function updateSeo(Request $request)
@@ -271,6 +288,8 @@ class SettingsController extends Controller
         Setting::updateSettings($this->validate($request, [
             'keywords' => ['nullable', 'string', 'max:150'],
             'g-analytics-id' => ['nullable', 'string', 'max:50'],
+            'html-head' => ['nullable', 'string'],
+            'html-body' => ['nullable', 'string'],
         ]));
 
         ActionLog::log('settings.updated');
@@ -294,8 +313,9 @@ class SettingsController extends Controller
     /**
      * Update the application mail settings.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function updateMail(Request $request)
@@ -335,8 +355,9 @@ class SettingsController extends Controller
     /**
      * Update the application maintenance settings.
      *
-     * @param  Request  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function updateMaintenance(Request $request)
@@ -348,11 +369,6 @@ class SettingsController extends Controller
         Setting::updateSettings('maintenance-status', $request->has('maintenance-status'));
 
         return redirect()->route('admin.settings.maintenance')->with('success', trans('admin.settings.status.updated'));
-    }
-
-    protected function hasAdvancedCache()
-    {
-        return $this->app->configurationIsCached() || $this->app->routesAreCached();
     }
 
     protected function getAvailableLocales()

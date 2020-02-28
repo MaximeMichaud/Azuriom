@@ -32,7 +32,7 @@ class ActionLog extends Model
         'updates.installed' => [
             'icon' => 'sync',
             'color' => 'warning',
-            'message' => 'admin.logs.updates.updated',
+            'message' => 'admin.logs.updates.installed',
         ],
         'plugins.enabled' => [
             'icon' => 'plus',
@@ -69,6 +69,7 @@ class ActionLog extends Model
             Page::class,
             Role::class,
             Server::class,
+            Image::class,
             User::class,
         ], 'admin.logs');
     }
@@ -103,7 +104,7 @@ class ActionLog extends Model
         return self::$actions[$this->action] ?? [
             'icon' => 'question',
             'color' => 'muted',
-            'message' => '?',
+            'message' => $this->action,
         ];
     }
 

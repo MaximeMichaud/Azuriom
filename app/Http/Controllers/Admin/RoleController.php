@@ -26,6 +26,7 @@ class RoleController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
@@ -58,7 +59,7 @@ class RoleController extends Controller
      */
     public function create()
     {
-        return view('admin.roles.create', ['permissions' => Permission::permissions()]);
+        return view('admin.roles.create', ['permissions' => Permission::permissionsWithName()]);
     }
 
     /**
@@ -81,6 +82,7 @@ class RoleController extends Controller
      *
      * @param  \Azuriom\Models\Role  $role
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function edit(Role $role)
@@ -101,6 +103,7 @@ class RoleController extends Controller
      * @param  \Azuriom\Http\Requests\RoleRequest  $request
      * @param  \Azuriom\Models\Role  $role
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function update(RoleRequest $request, Role $role)
@@ -127,6 +130,7 @@ class RoleController extends Controller
      *
      * @param  \Azuriom\Models\Role  $role
      * @return \Illuminate\Http\Response
+     *
      * @throws \Exception
      */
     public function destroy(Role $role)

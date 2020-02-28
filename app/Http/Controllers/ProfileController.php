@@ -48,7 +48,7 @@ class ProfileController extends Controller
         }
 
         $google2fa = new Google2FA();
-        $secretKey = old('2fa_key', $google2fa->generateSecretKey());
+        $secretKey = $request->old('2fa_key', $google2fa->generateSecretKey());
         $otpUrl = $google2fa->getQRCodeUrl(site_name(), $request->user()->email, $secretKey);
 
         $qrCode = new QRCode(new QROptions([
@@ -75,13 +75,13 @@ class ProfileController extends Controller
 
         $request->user()->update(['google_2fa_secret' => $request->input('2fa_key')]);
 
-        return redirect()->route('profile.index')->with('success', trans('messages.profile.enabled'));
+        return redirect()->route('profile.index')->with('success', trans('messages.profile.2fa.enabled'));
     }
 
     public function disable2fa(Request $request)
     {
         $request->user()->update(['google_2fa_secret' => null]);
 
-        return redirect()->route('profile.index')->with('success', trans('messages.profile.disabled'));
+        return redirect()->route('profile.index')->with('success', trans('messages.profile.2fa.disabled'));
     }
 }

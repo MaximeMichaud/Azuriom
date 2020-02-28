@@ -15,7 +15,8 @@ class AdminLayoutComposer
     protected $updates;
 
     /**
-     * AdminComposer constructor.
+     * Create a new composer instance.
+     *
      * @param  \Azuriom\Extensions\UpdateManager  $updates
      */
     public function __construct(UpdateManager $updates)
@@ -26,7 +27,7 @@ class AdminLayoutComposer
     /**
      * Bind data to the view.
      *
-     * @param  View  $view
+     * @param  \Illuminate\View\View  $view
      * @return void
      */
     public function compose(View $view)

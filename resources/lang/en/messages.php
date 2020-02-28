@@ -4,7 +4,7 @@ return [
 
     'lang' => 'English',
 
-    'copyright' => 'Powered by <a href="https://azuriom.com" target="_blank" rel="noreferrer">Azuriom</a>.',
+    'copyright' => 'Powered by <a href="https://azuriom.com" target="_blank" rel="noopener noreferrer">Azuriom</a>.',
 
     'date' => 'F j, Y',
     'date-full' => 'F j, Y \a\t g:i A',
@@ -73,6 +73,8 @@ return [
 
     'status-error' => 'An error occurred: :error',
 
+    'catpcha-failed' => 'The captcha verification failed, please try again.',
+
     'profile' => [
         'title' => 'My Profile',
         'change-email' => 'Change E-Mail Address',
@@ -80,7 +82,7 @@ return [
 
         'not-verified' => 'Your email is not verified, please check your email for a verification link.',
 
-        'updated' => 'Profile updated',
+        'updated' => 'Your profile has been updated.',
 
         'info' => [
             'role' => 'Role: :role',
@@ -107,7 +109,7 @@ return [
     'posts' => [
         'posts' => 'Posts',
         'posted' => 'Posted on :date by :user',
-        'not-published' => 'This post is not published yet',
+        'not-published' => 'This post is not published yet.',
         'read' => 'Read more',
     ],
 

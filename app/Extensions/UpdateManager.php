@@ -3,6 +3,7 @@
 namespace Azuriom\Extensions;
 
 use Azuriom\Azuriom;
+use Azuriom\Support\Optimizer;
 use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
@@ -62,46 +63,22 @@ class UpdateManager
 
     public function getLastVersion(bool $force = false)
     {
-        $updates = $this->getUpdate($force);
-
-        if (empty($updates)) {
-            return null;
-        }
-
-        return $updates['version'] ?? null;
+        return $this->getUpdate($force)['version'] ?? null;
     }
 
     public function getUpdate(bool $force = false)
     {
-        $updates = $this->fetch($force);
-
-        if (empty($updates)) {
-            return null;
-        }
-
-        return $updates['update'] ?? null;
+        return $this->fetch($force)['update'] ?? null;
     }
 
     public function getPlugins(bool $force = false)
     {
-        $updates = $this->fetch($force);
-
-        if (empty($updates)) {
-            return null;
-        }
-
-        return $updates['plugins'] ?? [];
+        return $this->fetch($force)['plugins'] ?? [];
     }
 
     public function getThemes(bool $force = false)
     {
-        $updates = $this->fetch($force);
-
-        if (empty($updates)) {
-            return null;
-        }
-
-        return $updates['themes'] ?? [];
+        return $this->fetch($force)['themes'] ?? [];
     }
 
     public function fetch(bool $force = false)
@@ -149,11 +126,6 @@ class UpdateManager
         $response = $this->getHttpClient()->get('https://azuriom.com/api/updates');
 
         return json_decode($response->getBody()->getContents(), true);
-    }
-
-    public function installExtension(array $info)
-    {
-        $dir = storage_path('');
     }
 
     public function download(array $info, string $tempDir = '')
@@ -209,6 +181,8 @@ class UpdateManager
         $zip->close();
 
         $this->files->delete($file);
+
+        app(Optimizer::class)->clear();
 
         Artisan::call('migrate', ['--force' => true, '--seed' => true]);
     }

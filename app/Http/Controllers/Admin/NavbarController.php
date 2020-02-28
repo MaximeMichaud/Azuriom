@@ -31,6 +31,7 @@ class NavbarController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function updateOrder(Request $request)
@@ -142,11 +143,12 @@ class NavbarController extends Controller
      *
      * @param  \Azuriom\Models\NavbarElement  $navbarElement
      * @return \Illuminate\Http\Response
+     *
      * @throws \Exception
      */
     public function destroy(NavbarElement $navbarElement)
     {
-        if ($navbarElement->isDropDown() && $navbarElement->elements->count() > 0) {
+        if ($navbarElement->isDropDown() && ! $navbarElement->elements->isEmpty()) {
             return redirect()->route('admin.navbar-elements.index')
                 ->with('error', 'You cannot delete dropdown with elements');
         }

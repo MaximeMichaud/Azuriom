@@ -85,8 +85,8 @@ return [
     'dashboard' => [
         'title' => 'Panel administrateur',
 
-        'new-update' => 'Une nouvelle version d\'Azuriom est disponible: :version',
-        'https-warning' => 'Votre site n\'utilise pas le procotole https, il est recommandé de l\'activer et de le forcer pour améliorer la sécurité de votre site.',
+        'new-update' => 'Une nouvelle version d\'Azuriom est disponible : :version',
+        'https-warning' => 'Votre site n\'utilise pas le protocole https, il est recommandé de l\'activer et de le forcer pour améliorer la sécurité de votre site.',
         'recent-users' => 'Utilisateurs récents',
         'active-users' => 'Utilisateurs actifs',
 
@@ -130,7 +130,7 @@ return [
             'recaptcha' => 'Activer la protection par Google reCaptcha',
             'recaptcha-site-key' => 'Clé du site',
             'recaptcha-secret-key' => 'Clé secrète',
-            'recaptcha-info' => '<small>Vous pouvez obtenir les clés Google reCaptcha sur la page de <a href="https://www.google.com/recaptcha/" target="_blank">Google reCaptcha</a>.</small> <small>Vous devez utiliser des clés reCaptcha <strong>v2 invisible</strong>.</small>',
+            'recaptcha-info' => 'Vous pouvez obtenir les clés Google reCaptcha sur la page de <a href="https://www.google.com/recaptcha/" target="_blank" rel="noopener noreferrer">Google reCaptcha</a>. Vous devez utiliser des clés reCaptcha <strong>v2 invisible</strong>.',
 
             'hash' => 'Algorithme de hachage',
             'hash-info' => 'Argon2id est l\'algorithme le plus sûr mais il nécessite PHP 7.3 ou plus. Si vous utilisez PHP 7.2, vous devriez utiliser Argon2i.',
@@ -171,7 +171,6 @@ return [
                     'reloaded' => 'RocketBooster a été rechargé.',
 
                     'enable-error' => 'Une erreur est survenue en activant RocketBooster.',
-                    'disable-error' => 'Une erreur est survenue en désactivant RocketBooster.',
                 ],
 
                 'actions' => [
@@ -186,9 +185,14 @@ return [
             'title' => 'Paramètres SEO',
 
             'google-analytics' => 'Identifiant du site Google Analytics',
-            'google-analytics-info' => 'Vous pouvez obtenir l\'identifiant du site sur la page de <a href="https://www.google.com/analytics/web/" target="_blank"> Google Analytics</a>.',
+            'google-analytics-info' => 'Vous pouvez obtenir l\'identifiant du site sur la page de <a href="https://www.google.com/analytics/web/" target="_blank" rel="noopener noreferrer">Google Analytics</a>.',
             'meta' => 'Mots-clés du site',
             'meta-info' => 'Les mots-clés doivent être séparés par une virgule.',
+
+            'html-head-code' => 'Code HTML à inclure dans le <head> de toutes les pages',
+            'html-body-code' => 'Code HTML à inclure dans le <body> de toutes les pages',
+
+            'html-code-info' => 'Exemple: Bannière cookies, etc',
         ],
 
         'mail' => [
@@ -197,7 +201,7 @@ return [
             'from-address' => 'Adresse E-Mail utilisée pour envoyer les e-mails.',
             'encryption' => 'Protocol de chiffrement Mail',
             'driver' => 'Type Mail',
-            'driver-info' => 'Azuriom supporte le SMTP et Sendmail pour l\'envoie des e-mails. Vous pouvez trouver plus d\'informations sur l\'envoie des mails dans notre <a href="https://azuriom.com/docs" target="_blank" rel="noopener">documentation</a>.',
+            'driver-info' => 'Azuriom supporte le SMTP et Sendmail pour l\'envoie des e-mails. Vous pouvez trouver plus d\'informations sur l\'envoie des mails dans notre <a href="https://azuriom.com/docs" target="_blank" rel="noopener noreferrer">documentation</a>.',
             'host' => 'Adresse de l\'hôte SMTP',
             'port' => 'Port de l\'hôte SMTP',
             'username' => 'Utilisateur du serveur SMTP',
@@ -586,5 +590,11 @@ return [
         'themes' => [
             'changed' => 'Changement de theme',
         ],
+    ],
+
+    'errors' => [
+        'back' => 'Retour',
+        '404' => 'Page Non Trouvée',
+        'info' => 'Il semblerait que vous avez trouvé un bug dans la matrice...',
     ],
 ];
